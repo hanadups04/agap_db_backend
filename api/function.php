@@ -249,9 +249,6 @@ function updateAdminAcc($adminAccInput, $adminParams){
 }
 /*--UPDATE admin_acc Ends Here--*/
 /*--DELETE admin_acc Starts Here--*/
-
-
-
 function deleteAdminAcc($adminParams){
 
     global $conn;
