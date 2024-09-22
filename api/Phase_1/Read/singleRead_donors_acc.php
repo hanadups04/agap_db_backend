@@ -16,7 +16,7 @@ if($requestMethod == 'OPTIONS'){
 
 if($requestMethod == 'GET'){
 
-    if(isset($_GET['donor_id'])){
+    if(isset($_GET['account_id'])){
 
         $donor = getDonor($_GET);
         echo $donor;

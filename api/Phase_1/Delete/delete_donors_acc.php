@@ -2,7 +2,7 @@
 
 header ('Access-Control-Allow-Origin:*');
 header ('Content-Type: application/json');
-header ('Access-Control-Allow-Methods: GET, OPTIONS');
+header ('Access-Control-Allow-Methods: DELETE, OPTIONS');
 header ('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Request-With');
 
 include ('../../function.php');
@@ -14,23 +14,10 @@ if($requestMethod == 'OPTIONS'){
     exit();
 }
 
-if($requestMethod == 'GET'){
+if($requestMethod == 'DELETE'){
 
-    if(isset($_GET['account_id'])){
-
-        $volunteer = getVolunteer($_GET);
-        echo $volunteer;
-
-    } else {
-
-        $data = [
-            'status' => 404,
-            'message' => $requestMethod. ' Method Not Allowed',
-        ];
-        header("HTTP/1.0 404 Method Not Allowed");
-        echo json_encode($data);
-
-    }
+    $deleteDonorAcc = deleteDonorAcc($_GET);
+    echo $deleteDonorAcc;
 
 } else {
     $data = [
