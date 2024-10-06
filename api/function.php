@@ -15,7 +15,6 @@ function error422($message){
 }
 /*--error422--*/
 
-
 /*--ADMIN_ACC_TBL--*/
 /*--READ admin_acc List Starts Here--*/
 // function getAdminList(){
@@ -110,67 +109,165 @@ function error422($message){
 // }
 /*--SINGLE READ admin_acc Ends Here--*/
 
+/*--LOGIN admin_acc Starts Here--*/
+function loginAdminAcc($adminAccInput){
+
+    global $conn;
+
+    if (isset($adminAccInput['email']) && isset($adminAccInput['password'])) {
+        $email = mysqli_real_escape_string($conn, $adminAccInput['email']);
+        $password = mysqli_real_escape_string($conn, $adminAccInput['password']);
+
+        $hashing = md5($password);
+
+        if (empty(trim($email))) {
+
+            return error422('Enter valid email');
+
+        } elseif (empty(trim($password))) {
+
+            return error422('Enter valid password');
+
+        } else {
+
+            $query = "SELECT admin_id, session_expire FROM 
+                    admin_acc_tbl 
+                WHERE 
+                    email = '$email' AND 
+                    password = '$hashing';";
+            $result = mysqli_query($conn, $query);
+
+            if ($result) {
+                if (mysqli_num_rows($result) == 1) {
+                    $res = mysqli_fetch_assoc($result);
+                    
+                        $session_expire = $res['session_expire'];
+
+                        if (time() > $session_expire) {
+                            $session_token = bin2hex(random_bytes(32));
+                            $expire = time() + (365 * 24 * 60 * 60);
+
+                            // Store session token in the database for the user
+                            $admin_id = $res['admin_id'];
+                            $update_token_query = "UPDATE admin_acc_tbl SET session_token='$session_token', session_expire = '$expire' WHERE admin_id='$admin_id'";
+                            mysqli_query($conn, $update_token_query);
+
+                            // Set the session token as an HTTP-only, secure cookie
+                            setcookie('admin_session_token', $session_token, [
+                                'expires' => $expire, // 1 year expiration
+                                'path' => '/',
+                                'httponly' => true,  // Prevent JavaScript access
+                                'secure' => true,    // Use HTTPS
+                                'samesite' => 'Strict', // CSRF protection
+                            ]);
+
+                            $data = [
+                                'status' => 201,
+                                'message' => 'Session Invalid, generated a new token: Logged In Successfully',
+                                'data' => $res,
+                            ];
+                            header("HTTP/1.0 200 OK");
+                            return json_encode($data);
+                        } else {
+                            $data = [
+                                'status' => 201,
+                                'message' => 'Session is still valid. Logged In Successfully',
+                                'data' => $res,
+                            ];
+                            header("HTTP/1.0 200 OK");
+                            return json_encode($data);
+                        }
+                    } else {
+                        $data = [
+                            'status' => 401,
+                            'message' => 'Invalid Email or Password',
+                        ];
+                        header("HTTP/1.0 401 Unauthorized");
+                        return json_encode($data);
+                    }
+            } else {
+                $data = [
+                    'status' => 500,
+                    'message' => 'Internal Server Error',
+                ];
+                header("HTTP/1.0 500 Internal Server Error");
+                return json_encode($data);
+            }
+        }
+    } else {
+        return error422('Enter Email and Password');
+    }
+}
+
+/*--LOGIN admin_acc Ends Here--*/
+
 /*--INSERT admin_acc Starts Here--*/
 function insertAdminAcc($adminAccInput){
 
     global $conn;
 
-    $admin_id = 'ADMIN' . date('Y') . ' - ' . uniqid();
-    $last_name = mysqli_real_escape_string($conn, $adminAccInput['last_name']);
-    $first_name = mysqli_real_escape_string($conn, $adminAccInput['first_name']);
-    $middle_name = mysqli_real_escape_string($conn, $adminAccInput['middle_name']);
-    $email = mysqli_real_escape_string($conn, $adminAccInput['email']);
-    $password = mysqli_real_escape_string($conn, $adminAccInput['password']);
-    $contact_info = mysqli_real_escape_string($conn, $adminAccInput['contact_info']);
+    if (isset($adminAccInput['email']) && isset($adminAccInput['password'])) {
+        $admin_id = 'ADMIN' . date('Y') . ' - ' . uniqid();
+        $last_name = mysqli_real_escape_string($conn, $adminAccInput['last_name']);
+        $first_name = mysqli_real_escape_string($conn, $adminAccInput['first_name']);
+        $middle_name = mysqli_real_escape_string($conn, $adminAccInput['middle_name']);
+        $email = mysqli_real_escape_string($conn, $adminAccInput['email']);
+        $password = mysqli_real_escape_string($conn, $adminAccInput['password']);
+        $contact_info = mysqli_real_escape_string($conn, $adminAccInput['contact_info']);
 
-    if(empty(trim($last_name))){
+        $hashing = md5($password);
 
-        return error422('Enter your last name');
+        if(empty(trim($last_name))){
 
-    } elseif (empty(trim($first_name))) {
+            return error422('Enter your last name');
 
-        return error422('Enter your first name');
-    
-    } elseif (empty(trim($middle_name))) {
+        } elseif (empty(trim($first_name))) {
 
-        return error422('Enter your middle name');
-    
-    } elseif (empty(trim($email))) {
-
-        return error422('Enter your email');
-
-    } elseif (empty(trim($password))) {
-
-        return error422('Enter your password');
-
-    } elseif (empty(trim($contact_info))) {
-
-        return error422('Enter your contact info');
-
-    } else {
+            return error422('Enter your first name');
         
-        $query = "INSERT INTO admin_acc_tbl (admin_id, last_name, first_name, middle_name, email, password,  contact_info) 
-        VALUES ('$admin_id','$last_name','$first_name','$middle_name','$email','$password','$contact_info')";
-        $result = mysqli_query($conn, $query);
+        } elseif (empty(trim($middle_name))) {
 
-        if($result){
+            return error422('Enter your middle name');
+        
+        } elseif (empty(trim($email))) {
 
-            $data = [
-                'status' => 201,
-                'message' => 'Admin Account Inserted Successfully',
-            ];
-            header("HTTP/1.0 201 OK");
-            return json_encode($data);
+            return error422('Enter your email');
+
+        } elseif (empty(trim($password))) {
+
+            return error422('Enter your password');
+
+        } elseif (empty(trim($contact_info))) {
+
+            return error422('Enter your contact info');
 
         } else {
+            
+            $query = "INSERT INTO admin_acc_tbl (admin_id, last_name, first_name, middle_name, email, password,  contact_info) 
+            VALUES ('$admin_id','$last_name','$first_name','$middle_name','$email','$hashing','$contact_info')";
+            $result = mysqli_query($conn, $query);
 
-            $data = [
-                'status' => 500,
-                'message' => 'Internal Server Error',
-            ];
-            header("HTTP/1.0 500 Internal Server Error");
-            return json_encode($data);
+            if($result){
+
+                $data = [
+                    'status' => 201,
+                    'message' => 'Admin Account Inserted Successfully',
+                ];
+                header("HTTP/1.0 201 OK");
+                return json_encode($data);
+
+            } else {
+
+                $data = [
+                    'status' => 500,
+                    'message' => 'Internal Server Error',
+                ];
+                header("HTTP/1.0 500 Internal Server Error");
+                return json_encode($data);
+            }
         }
+    } else {
+        return error422('Enter Email and Password');
     }
 }
 /*--INSERT admin_acc Ends Here--*/
